@@ -1,5 +1,5 @@
 // angelia-frontend/components/DynamicRecorderPage.tsx
-import React, { useState, useRef, useEffect } from 'react'; // Adicionado useEffect
+import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiMic, FiPause, FiSquare } from 'react-icons/fi';
 import { useReactMediaRecorder } from 'react-media-recorder';
@@ -73,9 +73,10 @@ const StatusMessage = styled.p`
   font-size: 0.9rem;
 `;
 
-interface DynamicRecorderPageProps extends Record<string, never> {} // Corrigido para não ser uma interface vazia literal
+// REMOVIDO: interface DynamicRecorderPageProps extends Record<string, never> {}
+// Pois o componente não recebe props.
 
-const DynamicRecorderPage: React.FC<DynamicRecorderPageProps> = () => {
+const DynamicRecorderPage: React.FC = () => { // <--- AQUI ESTÁ A MUDANÇA PRINCIPAL
   const {
     status: mediaRecorderStatus,
     startRecording,
@@ -89,7 +90,6 @@ const DynamicRecorderPage: React.FC<DynamicRecorderPageProps> = () => {
     mediaRecorderOptions: {
       mimeType: "audio/webm"
     }
-    // Removidos onStart, onStop, onPause, onResume aqui
   });
 
   const [displayStatusMessage, setDisplayStatusMessage] = useState<string>('Ocioso');
@@ -111,7 +111,7 @@ const DynamicRecorderPage: React.FC<DynamicRecorderPageProps> = () => {
       default:
         setDisplayStatusMessage('Status desconhecido.');
     }
-  }, [mediaRecorderStatus]); // Atualiza a mensagem quando o status do gravador muda
+  }, [mediaRecorderStatus]);
 
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -120,7 +120,6 @@ const DynamicRecorderPage: React.FC<DynamicRecorderPageProps> = () => {
     if (audioRef.current) {
       audioRef.current.load();
     }
-    // setDisplayStatusMessage('Ocioso'); // O useEffect vai lidar com isso quando clearBlobUrl mudar o status para 'idle'
   };
 
   return (

@@ -1,15 +1,15 @@
-// angelia-frontend/components/UploadPageContent.tsx
+// angelia-frontend/components/FerramentaPageContent.tsx
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
 import { FiCheckCircle, FiAlertCircle, FiMic, FiPause, FiSquare } from 'react-icons/fi';
 import { useReactMediaRecorder } from 'react-media-recorder';
 
-// --- Styled Components (sem alterações) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
   min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
   background-color: #0A192F; color: #CCD6F6; padding: 4rem 2rem; padding-top: 120px;
 `;
-const UploadCard = styled.div`
+const ToolCard = styled.div`
   width: 100%; max-width: 600px; background-color: #112240; border-radius: 8px;
   padding: 3rem; text-align: center; box-shadow: 0 10px 30px -15px rgba(2,12,27,0.7);
 `;
@@ -26,11 +26,6 @@ const Label = styled.label`
   font-family: 'Inter', sans-serif; font-size: 1rem; color: #CCD6F6; margin-bottom: 0.5rem;
 `;
 const Input = styled.input`
-  padding: 0.8rem 1rem; border: 1px solid #1A2D4F; border-radius: 4px;
-  background-color: #0A192F; color: #CCD6F6; font-size: 1rem;
-  &:focus { outline: none; border-color: #64FFDA; box-shadow: 0 0 0 1px #64FFDA; }
-`;
-const Select = styled.select`
   padding: 0.8rem 1rem; border: 1px solid #1A2D4F; border-radius: 4px;
   background-color: #0A192F; color: #CCD6F6; font-size: 1rem;
   &:focus { outline: none; border-color: #64FFDA; box-shadow: 0 0 0 1px #64FFDA; }
@@ -68,12 +63,24 @@ const Message = styled.div<{ type: 'success' | 'error' }>`
   color: ${props => props.type === 'success' ? '#64FFDA' : '#E84D4D'};
   display: flex; align-items: center; gap: 0.5rem;
 `;
+const Separator = styled.div`
+  display: flex; align-items: center; text-align: center; color: #8892B0; margin: 1.5rem 0;
+  &::before, &::after { content: ''; flex: 1; border-bottom: 1px solid #1A2D4F; }
+  &:not(:empty)::before { margin-right: .25em; }
+  &:not(:empty)::after { margin-left: .25em; }
+`;
+const ResultCard = styled.div`
+  background-color: #0A192F; border: 1px solid #1A2D4F; border-radius: 8px;
+  padding: 1.5rem; margin-top: 2rem; text-align: left;
+  h2 { color: #64FFDA; font-family: 'Sora', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; }
+  p { font-size: 1.1rem; color: #CCD6F6; font-weight: bold; }
+`;
 
-// --- UploadPageContent Component ---
-const UploadPageContent: React.FC = () => {
-  const [formData, setFormData] = useState({ diagnosis: 'saudavel', age: '', gender: 'outro' });
+// --- FerramentaPageContent Component ---
+const FerramentaPageContent: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [analysisResult, setAnalysisResult] = useState<any>(null); // Usando 'any' para flexibilidade no resultado
 
   const {
     status: mediaRecorderStatus,
@@ -91,40 +98,48 @@ const UploadPageContent: React.FC = () => {
   });
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setUploadedFile(e.target.files[0]);
+      clearBlobUrl();
+      if (audioRef.current) audioRef.current.load();
+      setAnalysisResult(null);
+      setStatus('idle');
+      setMessage('');
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAnalyze = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!mediaBlobUrl) {
+    setStatus('loading');
+    setMessage('Analisando áudio...');
+    setAnalysisResult(null);
+
+    let audioFile: File | null = null;
+    if (mediaBlobUrl) {
+      const audioBlob = await fetch(mediaBlobUrl).then(res => res.blob());
+      audioFile = new File([audioBlob], `analysis_audio_${Date.now()}.webm`, {
+        type: "audio/webm", // CORREÇÃO CRÍTICA AQUI
+      });
+    } else if (uploadedFile) {
+      audioFile = uploadedFile;
+    }
+
+    if (!audioFile) {
       setStatus('error');
-      setMessage('Por favor, grave o áudio antes de enviar.');
+      setMessage('Por favor, grave ou selecione um arquivo de áudio.');
       return;
     }
-    setStatus('loading');
 
     try {
-      const audioBlob = await fetch(mediaBlobUrl).then(res => res.blob());
-
-      // ==================================================================
-      // A CORREÇÃO CRÍTICA ESTÁ AQUI:
-      // Criamos o objeto File forçando o tipo MIME correto.
-      // O Blob do react-media-recorder pode não ter o tipo correto, então definimos explicitamente.
-      // ==================================================================
-      const audioFile = new File([audioBlob], `recorded_audio_${Date.now()}.webm`, {
-        type: "audio/webm",
-      });
-
       const data = new FormData();
       data.append('audio_file', audioFile);
-      data.append('diagnosis', formData.diagnosis);
-      data.append('age', formData.age);
-      data.append('gender', formData.gender);
 
       const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      const response = await fetch(`${BACKEND_URL}/add-to-dataset/`, {
+      const response = await fetch(`${BACKEND_URL}/analyze/`, {
         method: 'POST',
         body: data,
       });
@@ -132,68 +147,55 @@ const UploadPageContent: React.FC = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.detail || 'Ocorreu um erro no servidor.');
+        throw new Error(result.detail || 'Ocorreu um erro na análise.');
       }
 
       setStatus('success');
-      setMessage(`Sucesso! Áudio ${result.audio_filename} adicionado ao dataset. ID: ${result.dataset_entry_id}`);
+      setMessage('Análise concluída!');
+      setAnalysisResult(result);
 
-      setFormData({ diagnosis: 'saudavel', age: '', gender: 'outro' });
       clearBlobUrl();
+      setUploadedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       if (audioRef.current) audioRef.current.load();
 
     } catch (error: unknown) {
       setStatus('error');
       if (error instanceof Error) {
         setMessage(error.message);
-        console.error("Erro ao enviar áudio para o dataset:", error);
+        console.error("Erro ao analisar áudio:", error);
       } else {
-        setMessage('Ocorreu um erro desconhecido.');
-        console.error("Erro desconhecido ao enviar áudio para o dataset:", error);
+        setMessage('Ocorreu um erro desconhecido na análise.');
+        console.error("Erro desconhecido ao analisar áudio:", error);
       }
     }
   };
 
   const handleClearRecording = () => {
     clearBlobUrl();
-    if (audioRef.current) {
-      audioRef.current.load();
-    }
+    if (audioRef.current) audioRef.current.load();
     setStatus('idle');
     setMessage('');
+    setAnalysisResult(null);
+  };
+
+  const handleClearUpload = () => {
+    setUploadedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setStatus('idle');
+    setMessage('');
+    setAnalysisResult(null);
   };
 
   return (
     <PageContainer>
-      <UploadCard>
-        <Title>Alimentar Dataset (Gravação)</Title>
-        <Form onSubmit={handleSubmit}>
+      <ToolCard>
+        <Title>Analisar Áudio</Title>
+        <Form onSubmit={handleAnalyze}>
           <FormGroup>
-            <Label htmlFor="diagnosis">Diagnóstico (Rótulo)</Label>
-            <Select id="diagnosis" name="diagnosis" value={formData.diagnosis} onChange={handleChange} required>
-              <option value="saudavel">Saudável</option>
-              <option value="parkinson">Parkinson</option>
-            </Select>
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="age">Idade</Label>
-            <Input type="number" id="age" name="age" value={formData.age} onChange={handleChange} required />
-          </FormGroup>
-
-          <FormGroup>
-            <Label htmlFor="gender">Gênero</Label>
-            <Select id="gender" name="gender" value={formData.gender} onChange={handleChange} required>
-              <option value="masculino">Masculino</option>
-              <option value="feminino">Feminino</option>
-              <option value="outro">Outro</option>
-            </Select>
-          </FormGroup>
-
-          <FormGroup>
-            <Label>Gravar Áudio (30 segundos ou mais recomendado)</Label>
+            <Label>Gravar Áudio</Label>
             <RecordingControls>
-              <RecordingButton type="button" onClick={startRecording} disabled={mediaRecorderStatus === "recording" || mediaRecorderStatus === "paused"} active={mediaRecorderStatus === "recording"} title="Iniciar Gravação">
+              <RecordingButton type="button" onClick={() => { startRecording(); setUploadedFile(null); setAnalysisResult(null); }} disabled={mediaRecorderStatus === "recording" || mediaRecorderStatus === "paused"} active={mediaRecorderStatus === "recording"} title="Iniciar Gravação">
                 <FiMic size={24} />
               </RecordingButton>
               <RecordingButton type="button" onClick={stopRecording} disabled={mediaRecorderStatus === "idle" || mediaRecorderStatus === "stopped"} title="Parar Gravação">
@@ -202,7 +204,7 @@ const UploadPageContent: React.FC = () => {
               {mediaRecorderStatus === "recording" && ( <RecordingButton type="button" onClick={pauseRecording} title="Pausar Gravação"> <FiPause size={24} /> </RecordingButton> )}
               {mediaRecorderStatus === "paused" && ( <RecordingButton type="button" onClick={resumeRecording} title="Continuar Gravação"> <FiMic size={24} /> </RecordingButton> )}
             </RecordingControls>
-            <StatusMessage>Status: {mediaRecorderStatus}</StatusMessage>
+            <StatusMessage>Status Gravação: {mediaRecorderStatus}</StatusMessage>
             {mediaBlobUrl && (
               <>
                 <AudioPreview controls src={mediaBlobUrl} ref={audioRef} />
@@ -213,16 +215,40 @@ const UploadPageContent: React.FC = () => {
             )}
           </FormGroup>
 
-          <SubmitButton type="submit" disabled={status === 'loading' || !mediaBlobUrl}>
-            {status === 'loading' ? 'Enviando...' : 'Enviar para o Dataset'}
+          <Separator>OU</Separator>
+
+          <FormGroup>
+            <Label htmlFor="audioFile">Carregar Arquivo de Áudio (.wav, .mp3, .webm)</Label>
+            <Input type="file" id="audioFile" name="audioFile" accept="audio/*" onChange={handleFileChange} ref={fileInputRef} />
+            {uploadedFile && (
+              <>
+                <StatusMessage>Arquivo carregado: {uploadedFile.name}</StatusMessage>
+                <button onClick={handleClearUpload} style={{ background: 'none', border: 'none', color: '#8892B0', cursor: 'pointer', marginTop: '0.5rem', fontSize: '0.9rem' }}>
+                  Limpar Carregamento
+                </button>
+              </>
+            )}
+          </FormGroup>
+
+          <SubmitButton type="submit" disabled={status === 'loading' || (!mediaBlobUrl && !uploadedFile)}>
+            {status === 'loading' ? 'Analisando...' : 'Analisar Áudio'}
           </SubmitButton>
 
           {status === 'success' && <Message type="success"><FiCheckCircle /> {message}</Message>}
           {status === 'error' && <Message type="error"><FiAlertCircle /> {message}</Message>}
+
+          {analysisResult && (
+            <ResultCard>
+              <h2>Resultado da Análise:</h2>
+              <p><strong>Nível de Risco:</strong> {analysisResult.riskLevel}</p>
+              <p><strong>Confiança:</strong> {(analysisResult.confidence * 100).toFixed(2)}%</p>
+              <p><strong>Recomendação:</strong> {analysisResult.recommendation}</p>
+            </ResultCard>
+          )}
         </Form>
-      </UploadCard>
+      </ToolCard>
     </PageContainer>
   );
 };
 
-export default UploadPageContent;
+export default FerramentaPageContent;

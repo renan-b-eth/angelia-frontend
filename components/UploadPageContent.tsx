@@ -70,6 +70,12 @@ const Message = styled.div<{ type: 'success' | 'error' }>`
 `;
 
 // --- UploadPageContent Component ---
+interface UploadResult {
+  message: string;
+  audio_filename: string;
+  dataset_entry_id: string; // Exemplo de um ID retornado pelo backend
+}
+
 const UploadPageContent: React.FC = () => {
   const [formData, setFormData] = useState({ diagnosis: 'saudavel', age: '', gender: 'outro' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -108,11 +114,6 @@ const UploadPageContent: React.FC = () => {
     try {
       const audioBlob = await fetch(mediaBlobUrl).then(res => res.blob());
 
-      // ==================================================================
-      // A CORREÇÃO CRÍTICA ESTÁ AQUI:
-      // Criamos o objeto File forçando o tipo MIME correto.
-      // O Blob do react-media-recorder pode não ter o tipo correto, então definimos explicitamente.
-      // ==================================================================
       const audioFile = new File([audioBlob], `recorded_audio_${Date.now()}.webm`, {
         type: "audio/webm",
       });
@@ -123,16 +124,23 @@ const UploadPageContent: React.FC = () => {
       data.append('age', formData.age);
       data.append('gender', formData.gender);
 
-      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      const response = await fetch(`${BACKEND_URL}/add-to-dataset/`, {
+      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+      if (!BACKEND_URL) {
+        throw new Error("URL do backend não configurada. Verifique NEXT_PUBLIC_BACKEND_URL.");
+      }
+
+      console.log(`[Frontend] Enviando para: ${BACKEND_URL}/add-to-dataset/`);
+
+      const apiResponse = await fetch(`${BACKEND_URL}/add-to-dataset/`, {
         method: 'POST',
         body: data,
       });
 
-      const result = await response.json();
+      const result: UploadResult = await apiResponse.json(); // Explicitly type the result
 
-      if (!response.ok) {
-        throw new Error(result.detail || 'Ocorreu um erro no servidor.');
+      if (!apiResponse.ok) {
+        throw new Error(result.message || 'Ocorreu um erro no servidor.');
       }
 
       setStatus('success');
@@ -142,7 +150,7 @@ const UploadPageContent: React.FC = () => {
       clearBlobUrl();
       if (audioRef.current) audioRef.current.load();
 
-    } catch (error: unknown) {
+    } catch (error: unknown) { // Use unknown para capturar erros e refinar o tipo
       setStatus('error');
       if (error instanceof Error) {
         setMessage(error.message);

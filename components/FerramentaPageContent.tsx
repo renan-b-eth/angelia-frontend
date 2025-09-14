@@ -77,10 +77,17 @@ const ResultCard = styled.div`
 `;
 
 // --- FerramentaPageContent Component ---
+interface AnalysisResult {
+  riskLevel: string;
+  confidence: number;
+  recommendation: string;
+  // Adicione outras propriedades que seu backend pode retornar
+}
+
 const FerramentaPageContent: React.FC = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [analysisResult, setAnalysisResult] = useState<any>(null); // Usando 'any' para flexibilidade no resultado
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null); // Tipagem corrigida
 
   const {
     status: mediaRecorderStatus,
@@ -122,7 +129,7 @@ const FerramentaPageContent: React.FC = () => {
     if (mediaBlobUrl) {
       const audioBlob = await fetch(mediaBlobUrl).then(res => res.blob());
       audioFile = new File([audioBlob], `analysis_audio_${Date.now()}.webm`, {
-        type: "audio/webm", // CORREÇÃO CRÍTICA AQUI
+        type: "audio/webm",
       });
     } else if (uploadedFile) {
       audioFile = uploadedFile;
@@ -144,10 +151,10 @@ const FerramentaPageContent: React.FC = () => {
         body: data,
       });
 
-      const result = await response.json();
+      const result: AnalysisResult = await response.json(); // Tipagem corrigida
 
       if (!response.ok) {
-        throw new Error(result.detail || 'Ocorreu um erro na análise.');
+        throw new Error(result.recommendation || 'Ocorreu um erro na análise.'); // Usando 'recommendation' como exemplo de mensagem de erro
       }
 
       setStatus('success');
@@ -159,7 +166,7 @@ const FerramentaPageContent: React.FC = () => {
       if (fileInputRef.current) fileInputRef.current.value = '';
       if (audioRef.current) audioRef.current.load();
 
-    } catch (error: unknown) {
+    } catch (error: unknown) { // Use unknown para capturar erros e refinar o tipo
       setStatus('error');
       if (error instanceof Error) {
         setMessage(error.message);

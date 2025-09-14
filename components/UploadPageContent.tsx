@@ -218,7 +218,7 @@ const UploadPageContent: React.FC = () => {
       data.append('age', formData.age);
       data.append('gender', formData.gender);
 
-      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://angelia-backend.onrender.com/';
       const response = await fetch(`${BACKEND_URL}/add-to-dataset/`, {
         method: 'POST',
         body: data,

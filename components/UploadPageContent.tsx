@@ -216,9 +216,9 @@ const UploadPageContent: React.FC = () => {
       setStatus('success');
       setMessage(`Sucesso! Áudio ${result.audio_filename} adicionado.`);
       
-      setFormData({ diagnosis: 'saudavel', age: '', gender: 'outro' });
+      setFormData({ diagnosis: 'saudavel', age: '', gender: 'outro' }); // Reset form data
       clearBlobUrl();
-      if (audioRef.current) audioRef.current.load();
+      if (audioRef.current) audioRef.current.load(); // Reload audio element to clear source
     
     } catch (error: unknown) {
       setStatus('error');

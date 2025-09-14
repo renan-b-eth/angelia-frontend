@@ -9,7 +9,7 @@ export function middleware(req: NextRequest) {
     // As credenciais devem ser guardadas em variáveis de ambiente em produção!
     const [user, pwd] = Buffer.from(auth, 'base64').toString().split(':');
 
-    if (user === 'admin' && pwd === 'senha_segura') { // <-- MUDE ISSO EM PRODUÇÃO
+    if (user === 'admin' && pwd === 'angeliatest') { // <-- MUDE ISSO EM PRODUÇÃO
       return NextResponse.next();
     }
   }

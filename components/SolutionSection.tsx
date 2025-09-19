@@ -110,7 +110,7 @@ const SolutionSection: React.FC = () => {
           viewport={{ once: true, amount: 0.3 }}
         >
            <Image 
-                    src="/images/banner.png" // Caminho para a sua logo
+                    src="https://pub-03b33c3cc01341c68dcb40c656d81b34.r2.dev/banner_1.jpg" // Caminho para a sua logo
                     alt="angel.ia Logo"
                     width={350} // Largura da imagem da logo em pixels
                     height={350} // Altura da imagem da logo em pixels

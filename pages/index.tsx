@@ -76,7 +76,7 @@ const Home: NextPage = () => {
         <HeroContainer>
           <HeroLogoContainer>
             <Image
-              src="https://pub-03b33c3cc01341c68dcb40c656d81b34.r2.dev/logo.png"
+              src="https://pub-03b33c3cc01341c68dcb40c656d81b34.r2.dev/logo_redonda.png"
               alt="angel.ia Logo - O Futuro do Diagnóstico está em sua Voz"
               width={300}
               height={300}

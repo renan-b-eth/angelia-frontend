@@ -48,7 +48,7 @@ const Header: React.FC = () => {
     <Nav>
       <LogoContainer>
         <Link href="/" passHref>
-          <Image src="/images/logo.png" alt="angel.ia Logo" width={50} height={50} />
+          <Image src="https://pub-03b33c3cc01341c68dcb40c656d81b34.r2.dev/logo.png" alt="angel.ia Logo" width={50} height={50} />
         </Link>
       </LogoContainer>
       <NavLinks>

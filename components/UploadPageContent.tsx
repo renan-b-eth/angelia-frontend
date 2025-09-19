@@ -1,7 +1,8 @@
-// angelia-frontend/components/UploadPageContent.tsx (VERSÃO ATUALIZADA com novos campos de metadados)
+// angelia-frontend/components/UploadPageContent.tsx (VERSÃO CORRIGIDA DOS ERROS DE LINTER/ESLINT)
 import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
-import { FiCheckCircle, FiAlertCircle, FiMic, FiPause, FiSquare, FiSend, FiXCircle } from 'react-icons/fi';
+// Removidos FiSend e FiXCircle pois não são usados
+import { FiCheckCircle, FiAlertCircle, FiMic, FiPause, FiSquare } from 'react-icons/fi';
 import { useReactMediaRecorder } from 'react-media-recorder';
 
 // --- Styled Components --- (MANTÉM OS MESMOS, adicionei apenas um para TextArea)
@@ -322,12 +323,12 @@ const UploadPageContent: React.FC = () => {
           <FormGroup>
             <Label htmlFor="taskType">Tipo de Tarefa Vocal</Label>
             <Select id="taskType" name="taskType" value={formData.taskType} onChange={handleChange} required>
-              <option value="vogal_a_sustentada">Vogal 'A' Sustentada</option>
-              <option value="vogal_e_sustentada">Vogal 'E' Sustentada</option>
-              <option value="vogal_i_sustentada">Vogal 'I' Sustentada</option>
+              <option value="vogal_a_sustentada">Vogal &apos;A&apos; Sustentada</option> {/* Corrigido */}
+              <option value="vogal_e_sustentada">Vogal &apos;E&apos; Sustentada</option> {/* Corrigido */}
+              <option value="vogal_i_sustentada">Vogal &apos;I&apos; Sustentada</option> {/* Corrigido */}
               <option value="leitura_frase">Leitura de Frase Padrão</option>
-              <option value="s_fricativo">Som 'S' Fricativo</option>
-              <option value="z_fricativo">Som 'Z' Fricativo</option>
+              <option value="s_fricativo">Som &apos;S&apos; Fricativo</option> {/* Corrigido */}
+              <option value="z_fricativo">Som &apos;Z&apos; Fricativo</option> {/* Corrigido */}
               <option value="silencio">Gravação de Silêncio</option>
               {/* Adicione outras tarefas que você planeja coletar */}
             </Select>

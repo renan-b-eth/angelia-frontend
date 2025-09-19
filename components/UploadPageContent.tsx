@@ -1,10 +1,10 @@
-// angelia-frontend/components/UploadPageContent.tsx
-import React, { useState, useRef, useEffect } from 'react';
+// angelia-frontend/components/UploadPageContent.tsx (VERSÃO ATUALIZADA com novos campos de metadados)
+import React, { useState, useRef } from 'react';
 import styled from 'styled-components';
 import { FiCheckCircle, FiAlertCircle, FiMic, FiPause, FiSquare, FiSend, FiXCircle } from 'react-icons/fi';
 import { useReactMediaRecorder } from 'react-media-recorder';
 
-// --- Styled Components ---
+// --- Styled Components --- (MANTÉM OS MESMOS, adicionei apenas um para TextArea)
 const PageContainer = styled.div`
   min-height: 100vh;
   display: flex;
@@ -74,6 +74,23 @@ const Select = styled.select`
   background-color: #0A192F;
   color: #CCD6F6;
   font-size: 1rem;
+  &:focus {
+    outline: none;
+    border-color: #64FFDA;
+    box-shadow: 0 0 0 1px #64FFDA;
+  }
+`;
+
+// Novo Styled Component para TextArea
+const TextArea = styled.textarea`
+  padding: 0.8rem 1rem;
+  border: 1px solid #1A2D4F;
+  border-radius: 4px;
+  background-color: #0A192F;
+  color: #CCD6F6;
+  font-size: 1rem;
+  resize: vertical; /* Permite redimensionar verticalmente */
+  min-height: 80px;
   &:focus {
     outline: none;
     border-color: #64FFDA;
@@ -154,7 +171,18 @@ const Message = styled.div<{ type: 'success' | 'error' }>`
 `;
 
 const UploadPageContent: React.FC = () => {
-  const [formData, setFormData] = useState({ diagnosis: 'saudavel', age: '', gender: 'outro' });
+  // Estados para os dados do formulário
+  const [formData, setFormData] = useState({ 
+    patientId: '', // Novo: ID do paciente
+    diagnosis: 'saudavel', 
+    age: '', 
+    gender: 'outro',
+    taskType: 'vogal_a_sustentada', // Novo: Tipo de tarefa vocal
+    recordingEnvironment: 'silencioso', // Novo: Ambiente de gravação
+    symptoms: '', // Novo: Sintomas
+    medications: '', // Novo: Medicamentos
+  });
+  
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
@@ -175,7 +203,7 @@ const UploadPageContent: React.FC = () => {
 
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -197,9 +225,16 @@ const UploadPageContent: React.FC = () => {
 
       const data = new FormData();
       data.append('audio_file', audioFile);
+      
+      // Adicionar TODOS os campos do formulário ao FormData
+      data.append('patient_id', formData.patientId);
       data.append('diagnosis', formData.diagnosis);
       data.append('age', formData.age);
       data.append('gender', formData.gender);
+      data.append('task_type', formData.taskType);
+      data.append('recording_environment', formData.recordingEnvironment);
+      data.append('symptoms', formData.symptoms);
+      data.append('medications', formData.medications);
       
       const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       const response = await fetch(`${BACKEND_URL}/add-to-dataset/`, {
@@ -210,15 +245,20 @@ const UploadPageContent: React.FC = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.detail || 'Ocorreu um erro no servidor.');
+        throw new Error(result.message || result.detail || 'Ocorreu um erro no servidor.');
       }
 
       setStatus('success');
-      setMessage(`Sucesso! Áudio ${result.audio_filename} adicionado.`);
+      setMessage(result.message || `Sucesso! Áudio adicionado ao dataset.`);
       
-      setFormData({ diagnosis: 'saudavel', age: '', gender: 'outro' }); // Reset form data
+      // Limpar formulário e gravação
+      setFormData({ 
+        patientId: '', diagnosis: 'saudavel', age: '', gender: 'outro',
+        taskType: 'vogal_a_sustentada', recordingEnvironment: 'silencioso',
+        symptoms: '', medications: ''
+      }); 
       clearBlobUrl();
-      if (audioRef.current) audioRef.current.load(); // Reload audio element to clear source
+      if (audioRef.current) audioRef.current.load();
     
     } catch (error: unknown) {
       setStatus('error');
@@ -244,21 +284,31 @@ const UploadPageContent: React.FC = () => {
   return (
     <PageContainer>
       <UploadCard>
-        <Title>Alimentar Dataset (Gravação)</Title>
+        <Title>Alimentar Dataset (Coleta Estruturada)</Title>
         <Form onSubmit={handleSubmit}>
+          {/* Campo: ID do Paciente */}
+          <FormGroup>
+            <Label htmlFor="patientId">ID Único do Paciente</Label>
+            <Input type="text" id="patientId" name="patientId" value={formData.patientId} onChange={handleChange} required />
+          </FormGroup>
+
+          {/* Campo: Diagnóstico */}
           <FormGroup>
             <Label htmlFor="diagnosis">Diagnóstico (Rótulo)</Label>
             <Select id="diagnosis" name="diagnosis" value={formData.diagnosis} onChange={handleChange} required>
               <option value="saudavel">Saudável</option>
               <option value="parkinson">Parkinson</option>
+              {/* Adicione outras opções conforme necessário */}
             </Select>
           </FormGroup>
 
+          {/* Campo: Idade */}
           <FormGroup>
             <Label htmlFor="age">Idade</Label>
             <Input type="number" id="age" name="age" value={formData.age} onChange={handleChange} required />
           </FormGroup>
 
+          {/* Campo: Gênero */}
           <FormGroup>
             <Label htmlFor="gender">Gênero</Label>
             <Select id="gender" name="gender" value={formData.gender} onChange={handleChange} required>
@@ -268,8 +318,59 @@ const UploadPageContent: React.FC = () => {
             </Select>
           </FormGroup>
 
+          {/* NOVO CAMPO: Tipo de Tarefa Vocal */}
           <FormGroup>
-            <Label>Gravar Áudio (30 segundos recomendado)</Label>
+            <Label htmlFor="taskType">Tipo de Tarefa Vocal</Label>
+            <Select id="taskType" name="taskType" value={formData.taskType} onChange={handleChange} required>
+              <option value="vogal_a_sustentada">Vogal 'A' Sustentada</option>
+              <option value="vogal_e_sustentada">Vogal 'E' Sustentada</option>
+              <option value="vogal_i_sustentada">Vogal 'I' Sustentada</option>
+              <option value="leitura_frase">Leitura de Frase Padrão</option>
+              <option value="s_fricativo">Som 'S' Fricativo</option>
+              <option value="z_fricativo">Som 'Z' Fricativo</option>
+              <option value="silencio">Gravação de Silêncio</option>
+              {/* Adicione outras tarefas que você planeja coletar */}
+            </Select>
+            <small style={{color: '#8892B0', marginTop: '5px'}}>
+                Instrua o paciente a realizar a tarefa selecionada durante a gravação.
+            </small>
+          </FormGroup>
+
+          {/* NOVO CAMPO: Ambiente de Gravação */}
+          <FormGroup>
+            <Label htmlFor="recordingEnvironment">Ambiente de Gravação</Label>
+            <Select id="recordingEnvironment" name="recordingEnvironment" value={formData.recordingEnvironment} onChange={handleChange} required>
+              <option value="silencioso">Silencioso (ideal)</option>
+              <option value="moderado">Ruído Moderado</option>
+              <option value="barulhento">Ruído Barulhento</option>
+              <option value="desconhecido">Desconhecido</option>
+            </Select>
+            <small style={{color: '#8892B0', marginTop: '5px'}}>
+                Um ambiente mais silencioso resulta em dados de melhor qualidade.
+            </small>
+          </FormGroup>
+
+          {/* NOVO CAMPO: Sintomas Auto-Reportados */}
+          <FormGroup>
+            <Label htmlFor="symptoms">Sintomas Atuais (separe por vírgula, ex: fadiga,estresse,tosse)</Label>
+            <TextArea id="symptoms" name="symptoms" value={formData.symptoms} onChange={handleChange} />
+            <small style={{color: '#8892B0', marginTop: '5px'}}>
+                Informe sintomas relevantes no momento da gravação para melhor contexto.
+            </small>
+          </FormGroup>
+
+          {/* NOVO CAMPO: Medicamentos Atuais */}
+          <FormGroup>
+            <Label htmlFor="medications">Medicamentos Atuais (separe por vírgula, ex: levodopa,aspirina)</Label>
+            <TextArea id="medications" name="medications" value={formData.medications} onChange={handleChange} />
+            <small style={{color: '#8892B0', marginTop: '5px'}}>
+                Liste medicamentos que possam influenciar a voz.
+            </small>
+          </FormGroup>
+
+          {/* Controles de Gravação (permanecem os mesmos) */}
+          <FormGroup>
+            <Label>Gravar Áudio</Label>
             <RecordingControls>
               <RecordingButton type="button" onClick={startRecording} disabled={mediaRecorderStatus === "recording" || mediaRecorderStatus === "paused"} active={mediaRecorderStatus === "recording"} title="Iniciar Gravação">
                 <FiMic size={24} />
@@ -291,10 +392,12 @@ const UploadPageContent: React.FC = () => {
             )}
           </FormGroup>
 
-          <SubmitButton type="submit" disabled={status === 'loading' || !mediaBlobUrl}>
+          {/* Botão de Envio */}
+          <SubmitButton type="submit" disabled={status === 'loading' || !mediaBlobUrl || !formData.patientId || !formData.age || !formData.gender}>
             {status === 'loading' ? 'Enviando...' : 'Enviar para o Dataset'}
           </SubmitButton>
 
+          {/* Mensagens de Status */}
           {status === 'success' && <Message type="success"><FiCheckCircle /> {message}</Message>}
           {status === 'error' && <Message type="error"><FiAlertCircle /> {message}</Message>}
         </Form>

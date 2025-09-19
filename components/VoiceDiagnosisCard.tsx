@@ -207,9 +207,14 @@ const VoiceDiagnosisCard: React.FC = () => {
       setDiagnoseMessage(result.message || `Diagnóstico concluído.`);
       setDiagnosisResult(result);
     
-    } catch (error: any) {
+    } catch (error: unknown) { // CORREÇÃO: Mudei 'any' para 'unknown'
       setDiagnoseStatus('error');
-      setDiagnoseMessage(error.message || 'Ocorreu um erro desconhecido ao diagnosticar.');
+      // CORREÇÃO: Acessar a mensagem do erro de forma segura
+      if (error instanceof Error) {
+        setDiagnoseMessage(error.message || 'Ocorreu um erro desconhecido ao diagnosticar.');
+      } else {
+        setDiagnoseMessage('Ocorreu um erro desconhecido ao diagnosticar.');
+      }
       console.error("Erro ao diagnosticar voz:", error);
     }
   };
@@ -219,7 +224,7 @@ const VoiceDiagnosisCard: React.FC = () => {
     <DiagnoseCard>
       <Title>Diagnóstico por Voz</Title>
       <p style={{marginBottom: '1.5rem', color: '#8892B0'}}>
-        Grave sua voz (preferencialmente uma vogal sustentada, ex: "Aaaaaa", por alguns segundos) 
+        Grave sua voz (preferencialmente uma vogal sustentada, ex: {"\"Aaaaaa\""}, por alguns segundos) 
         para que o modelo de Machine Learning tente identificar um diagnóstico.
       </p>
       
